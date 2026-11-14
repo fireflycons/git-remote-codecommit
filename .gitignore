@@ -1,2 +1,6 @@
 /git-remote-codecommit
 /git-remote-codecommit.exe
+choco/tools/amd64/
+choco/tools/arm64/
+choco/tools/LICENSE.txt
+*.nupkg
