@@ -55,6 +55,40 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "v$VERSION" dist/* --target "$MERGE_SHA" --title "v$VERSION" --generate-notes
 
+  # Re-runnable on its own: updates the formula from the published GitHub release.
+  homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - run: gh release download "v$VERSION" --pattern SHA256SUMS
+      - uses: actions/checkout@v5
+        with:
+          repository: fireflycons/homebrew-tap
+          ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          path: tap
+      - name: Update formula
+        run: |
+          mkdir -p tap/Formula
+          scripts/homebrew-formula.sh "$VERSION" SHA256SUMS > tap/Formula/git-remote-codecommit.rb
+          cd tap
+          git add Formula/git-remote-codecommit.rb
+          if git diff --cached --quiet; then
+            echo "Formula already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "git-remote-codecommit $VERSION"
+          git push
+
   # Re-runnable on its own: packages the binaries from the published GitHub release.
   chocolatey:
     needs: release

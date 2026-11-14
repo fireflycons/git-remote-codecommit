@@ -10,6 +10,12 @@ Windows, with [Chocolatey](https://community.chocolatey.org/packages/git-remote-
 choco install git-remote-codecommit
 ```
 
+macOS and Linux, with [Homebrew](https://brew.sh):
+
+```sh
+brew install fireflycons/tap/git-remote-codecommit
+```
+
 Any platform: download a binary from [Releases](https://github.com/fireflycons/git-remote-codecommit/releases), or build from source:
 
 ```sh
@@ -68,7 +74,7 @@ The version lives in [`VERSION`](VERSION). Every PR into `main` should bump it:
 
 - Pushing to any branch runs the tests on Linux, macOS and Windows.
 - A PR into `main` fails the `version-check` job if tag `v<VERSION>` already exists.
-- Merging a PR into `main` creates tag `v<VERSION>` and a GitHub release with binaries for Linux, macOS and Windows (amd64 and arm64), plus `SHA256SUMS`. It then pushes the Windows binaries to Chocolatey, which needs the `CHOCOLATEY_API_KEY` repository secret. Chocolatey publishes each version after moderation.
+- Merging a PR into `main` creates tag `v<VERSION>` and a GitHub release with binaries for Linux, macOS and Windows (amd64 and arm64), plus `SHA256SUMS`. It then pushes the Windows binaries to Chocolatey, which needs the `CHOCOLATEY_API_KEY` repository secret. Chocolatey publishes each version after moderation. It also updates the formula in [fireflycons/homebrew-tap](https://github.com/fireflycons/homebrew-tap), which needs the `HOMEBREW_TAP_DEPLOY_KEY` secret: the private half of a write-enabled deploy key on the tap repo.
 - If the PR title contains `[no release]`, the version check and the release are skipped. Use this for docs or CI-only changes.
 
 For the check to actually block merges, add a branch protection rule or ruleset on `main` that requires the `version-check` and `test` status checks.
