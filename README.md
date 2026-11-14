@@ -64,3 +64,7 @@ The version lives in [`VERSION`](VERSION). Every PR into `main` should bump it:
 - If the PR title contains `[no release]`, the version check and the release are skipped. Use this for docs or CI-only changes.
 
 For the check to actually block merges, add a branch protection rule or ruleset on `main` that requires the `version-check` and `test` status checks.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). This is an independent port and is not affiliated with or endorsed by AWS.

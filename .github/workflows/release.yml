@@ -35,7 +35,7 @@ jobs:
               [ "$os" = windows ] && bin="$bin.exe"
               mkdir -p "build/$name"
               CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "build/$name/$bin" .
-              cp README.md "build/$name/"
+              cp README.md LICENSE NOTICE "build/$name/"
               if [ "$os" = windows ]; then
                 (cd build/$name && zip -q "../../dist/$name.zip" *)
               else
