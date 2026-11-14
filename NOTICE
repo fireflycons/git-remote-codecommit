@@ -1,0 +1,10 @@
+git-remote-codecommit (Go)
+Copyright 2026 Alistair Mackay
+
+This product is a Go port of Git Remote Codecommit
+(https://github.com/aws/git-remote-codecommit), rewritten in Go and
+modified. Git Remote Codecommit is licensed under the Apache License 2.0
+and carries the following notice:
+
+  Git Remote Codecommit
+  Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.

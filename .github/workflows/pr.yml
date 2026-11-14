@@ -1,0 +1,29 @@
+name: pr
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Skipped (which counts as passing) when the PR title contains [no release].
+  version-check:
+    if: ${{ !contains(github.event.pull_request.title, '[no release]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check VERSION has not already been released
+        run: |
+          v="$(tr -d '[:space:]' < VERSION)"
+          if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error file=VERSION::VERSION contains '$v', which is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$v" > /dev/null; then
+            echo "::error file=VERSION::Tag v$v already exists. Run scripts/bump-version.sh patch|minor|major, or add [no release] to the PR title."
+            exit 1
+          fi
+          echo "v$v is not yet tagged"

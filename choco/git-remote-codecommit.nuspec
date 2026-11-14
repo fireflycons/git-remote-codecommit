@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>git-remote-codecommit</id>
+    <!-- Overridden by the version option of choco pack in the release workflow -->
+    <version>0.0.0</version>
+    <title>git-remote-codecommit (Go)</title>
+    <authors>fireflycons</authors>
+    <owners>fireflycons</owners>
+    <projectUrl>https://github.com/fireflycons/git-remote-codecommit</projectUrl>
+    <projectSourceUrl>https://github.com/fireflycons/git-remote-codecommit</projectSourceUrl>
+    <packageSourceUrl>https://github.com/fireflycons/git-remote-codecommit/tree/main/choco</packageSourceUrl>
+    <docsUrl>https://github.com/fireflycons/git-remote-codecommit#readme</docsUrl>
+    <bugTrackerUrl>https://github.com/fireflycons/git-remote-codecommit/issues</bugTrackerUrl>
+    <licenseUrl>https://github.com/fireflycons/git-remote-codecommit/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>git codecommit aws remote-helper cli</tags>
+    <summary>Git remote helper for AWS CodeCommit using AWS credentials.</summary>
+    <description><![CDATA[A git remote helper that lets you clone, pull and push AWS CodeCommit repositories with your AWS credentials (profiles, SSO, environment variables, credential_process), using URLs such as `codecommit::eu-west-1://my-profile@MyRepo`.
+
+This is an independent Go port of [aws/git-remote-codecommit](https://github.com/aws/git-remote-codecommit), packaged as a single binary with no Python dependency. It is not affiliated with or endorsed by AWS.
+
+**Requires Git for Windows**, installed by any method.]]></description>
+    <releaseNotes>https://github.com/fireflycons/git-remote-codecommit/releases/tag/v$version$</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
