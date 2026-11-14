@@ -49,3 +49,18 @@ The helper cannot prompt for an MFA code, because its stdin carries git's protoc
 - Repository names containing `/` or `@` are rejected as malformed.
 - Assume-role credentials are not cached on disk between git invocations.
 - Git credential helpers are turned off for the HTTPS transport. The signed credentials are short-lived, and with a session token they exceed the Windows Credential Manager's size limit, which made Git Credential Manager print `fatal: Failed to write item to store`.
+
+## Releasing
+
+The version lives in [`VERSION`](VERSION). Every PR into `main` should bump it:
+
+```sh
+./scripts/bump-version.sh patch   # or minor / major
+```
+
+- Pushing to any branch runs the tests on Linux, macOS and Windows.
+- A PR into `main` fails the `version-check` job if tag `v<VERSION>` already exists.
+- Merging a PR into `main` creates tag `v<VERSION>` and a GitHub release with binaries for Linux, macOS and Windows (amd64 and arm64), plus `SHA256SUMS`.
+- If the PR title contains `[no release]`, the version check and the release are skipped. Use this for docs or CI-only changes.
+
+For the check to actually block merges, add a branch protection rule or ruleset on `main` that requires the `version-check` and `test` status checks.
