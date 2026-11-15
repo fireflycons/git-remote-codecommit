@@ -79,6 +79,21 @@ The version lives in [`VERSION`](VERSION). Every PR into `main` should bump it:
 
 For the check to actually block merges, add a branch protection rule or ruleset on `main` that requires the `version-check` and `test` status checks.
 
+### If Chocolatey rejects a package
+
+Chocolatey moderators expect the fixed package to be pushed again with the same version. To do that:
+
+1. Fix the files under `choco/` in a PR whose title contains `[no release]`, and merge it.
+2. Run the `chocolatey` workflow on `main`, from the Actions tab or with:
+
+   ```sh
+   gh workflow run chocolatey.yml                    # version from the VERSION file
+   gh workflow run chocolatey.yml -f version=1.2.3   # a specific version
+   gh workflow run chocolatey.yml -f push=false      # dry run: only uploads the .nupkg artifact
+   ```
+
+The workflow repackages the Windows binaries from the existing GitHub release, so the release, `SHA256SUMS` and the Homebrew formula don't change. Chocolatey accepts the same version again only while that version is not yet approved. Once a version is approved, a fix needs a new version.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). This is an independent port and is not affiliated with or endorsed by AWS.

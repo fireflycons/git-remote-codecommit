@@ -1,0 +1,108 @@
+name: chocolatey
+
+# Packages the Windows binaries from an existing GitHub release and pushes them
+# to Chocolatey. The release workflow calls this after creating a release.
+#
+# Run it by hand to resubmit a package that the Chocolatey moderators rejected:
+# merge the fixes to choco/ in a PR titled with [no release], then run this
+# workflow on main. It repackages the same version from the same release zips,
+# so the hashes in VERIFICATION.txt still match. Chocolatey accepts the same
+# version again only while that version is not approved (rejected or waiting
+# for review). Once a version is approved, a fix needs a VERSION bump and a
+# normal release.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version to package (MAJOR.MINOR.PATCH, no leading v)
+        type: string
+        required: true
+      ref:
+        description: Commit to take the choco/ files from
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to package (MAJOR.MINOR.PATCH). Defaults to the VERSION file.
+        type: string
+        required: false
+      ref:
+        description: Commit or branch to take the choco/ files from. Defaults to the selected branch.
+        type: string
+        required: false
+      push:
+        description: Push to Chocolatey. Untick for a dry run that only uploads the .nupkg artifact.
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  chocolatey:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Resolve version
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          v="${INPUT_VERSION:-$(tr -d '[:space:]' < VERSION)}"
+          if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version '$v' is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          if ! gh release view "v$v" > /dev/null; then
+            echo "::error::GitHub release v$v does not exist. The Chocolatey package is built from an existing release."
+            exit 1
+          fi
+          echo "Packaging v$v from $(git rev-parse HEAD)"
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Prepare package contents
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tools = 'choco/tools'
+          gh release download "v$env:VERSION" --pattern '*_windows_*.zip' --dir zips
+          Copy-Item LICENSE "$tools/LICENSE.txt"
+          $verification = "$tools/VERIFICATION.txt"
+          foreach ($arch in 'amd64', 'arm64') {
+            $zip = "git-remote-codecommit_$($env:VERSION)_windows_$arch.zip"
+            Expand-Archive "zips/$zip" -DestinationPath "$tools/$arch"
+            Get-ChildItem "$tools/$arch" -Exclude git-remote-codecommit.exe | Remove-Item
+            $exeHash = (Get-FileHash "$tools/$arch/git-remote-codecommit.exe" -Algorithm SHA256).Hash
+            $zipHash = (Get-FileHash "zips/$zip" -Algorithm SHA256).Hash
+            Add-Content $verification @(
+              "windows/$arch"
+              "  zip:    https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:VERSION/$zip"
+              "  zip    SHA256: $zipHash"
+              "  binary SHA256: $exeHash  (tools/$arch/git-remote-codecommit.exe)"
+              ""
+            )
+          }
+          Get-Content $verification
+
+      - name: Pack
+        run: choco pack choco/git-remote-codecommit.nuspec --version ${{ env.VERSION }} --outdir dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chocolatey-package
+          path: dist/*.nupkg
+
+      # inputs.push is unset when called from the release workflow, which means push.
+      - name: Push to Chocolatey
+        if: ${{ inputs.push != false }}
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        shell: pwsh
+        run: choco push "dist/git-remote-codecommit.$env:VERSION.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY

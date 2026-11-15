@@ -41,13 +41,13 @@ jobs:
               CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "build/$name/$bin" .
               cp README.md LICENSE NOTICE "build/$name/"
               if [ "$os" = windows ]; then
-                (cd build/$name && zip -q "../../dist/$name.zip" *)
+                (cd "build/$name" && zip -q "../../dist/$name.zip" "$bin" README.md LICENSE NOTICE)
               else
                 tar -czf "dist/$name.tar.gz" -C "build/$name" .
               fi
             done
           done
-          (cd dist && sha256sum * > SHA256SUMS)
+          (cd dist && sha256sum -- * > SHA256SUMS)
           ls -l dist
 
       - name: Create release
@@ -90,53 +90,13 @@ jobs:
           git push
 
   # Re-runnable on its own: packages the binaries from the published GitHub release.
+  # To resubmit a rejected package, run the chocolatey workflow by hand (see README).
   chocolatey:
     needs: release
-    runs-on: windows-latest
     permissions:
       contents: read
-    env:
-      VERSION: ${{ needs.release.outputs.version }}
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-
-      - name: Prepare package contents
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $tools = 'choco/tools'
-          gh release download "v$env:VERSION" --pattern '*_windows_*.zip' --dir zips
-          Copy-Item LICENSE "$tools/LICENSE.txt"
-          $verification = "$tools/VERIFICATION.txt"
-          foreach ($arch in 'amd64', 'arm64') {
-            $zip = "git-remote-codecommit_$($env:VERSION)_windows_$arch.zip"
-            Expand-Archive "zips/$zip" -DestinationPath "$tools/$arch"
-            Get-ChildItem "$tools/$arch" -Exclude git-remote-codecommit.exe | Remove-Item
-            $exeHash = (Get-FileHash "$tools/$arch/git-remote-codecommit.exe" -Algorithm SHA256).Hash
-            $zipHash = (Get-FileHash "zips/$zip" -Algorithm SHA256).Hash
-            Add-Content $verification @(
-              "windows/$arch"
-              "  zip:    https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:VERSION/$zip"
-              "  zip    SHA256: $zipHash"
-              "  binary SHA256: $exeHash  (tools/$arch/git-remote-codecommit.exe)"
-              ""
-            )
-          }
-          Get-Content $verification
-
-      - name: Pack
-        run: choco pack choco/git-remote-codecommit.nuspec --version ${{ env.VERSION }} --outdir dist
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: chocolatey-package
-          path: dist/*.nupkg
-
-      - name: Push to Chocolatey
-        env:
-          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
-        shell: pwsh
-        run: choco push "dist/git-remote-codecommit.$env:VERSION.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
+    uses: ./.github/workflows/chocolatey.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+    secrets: inherit
